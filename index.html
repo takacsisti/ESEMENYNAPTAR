@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="https://www.drupal.org/files/project-images/drupal-module-calendar.jpg">
+    <title>Eseménynaptár</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
+
+        .tartaly {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .fejlec {
+            background: #3498db;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .esemeny-hozzaadas {
+            background: #ecf0f1;
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .urlap-sor {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .urlap-sor input, .urlap-sor select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            flex: 1;
+        }
+
+        .gomb {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .gomb:hover {
+            background: #2980b9;
+        }
+
+        .szurok {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .szuro-gomb {
+            padding: 8px 16px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .szuro-gomb.aktiv, .szuro-gomb:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .esemenyek {
+            padding: 0 20px 20px;
+        }
+
+        .ho-cim {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin: 20px 0 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .esemenyek-racs {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .esemeny-kartya {
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            color: white;
+            position: relative;
+        }
+
+        .esemeny-kartya.aktualis {
+            border: 3px solid #f39c12;
+            animation: villog 2s infinite;
+        }
+
+        @keyframes villog {
+            0%, 100% { box-shadow: 0 0 20px rgba(243, 156, 18, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(243, 156, 18, 0.8); }
+        }
+
+        .esemeny-kartya.lejart {
+            opacity: 0.6;
+        }
+
+        .tipus-kultura { background: #e74c3c; }
+        .tipus-sport { background: #3498db; }
+        .tipus-muveszet { background: #9b59b6; }
+        .tipus-tanulas { background: #2ecc71; }
+        .tipus-kirandulas { background: #1abc9c; }
+        .tipus-zene { background: #f39c12; }
+        .tipus-etel { background: #e67e22; }
+        .tipus-egyeb { background: #95a5a6; }
+
+        .esemeny-cim {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-right: 80px;
+        }
+
+        .esemeny-adat {
+            margin-bottom: 5px;
+        }
+
+        .esemeny-tipus {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin: 10px 0;
+            display: inline-block;
+        }
+
+        .maganlat {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            z-index: 1;
+            white-space: nowrap;
+        }
+
+        .reszletek-gomb {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .reszletek-gomb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-tartalom {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 400px;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .modal-gombok {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-gomb {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .modal-gomb.megerosit {
+            background: #3498db;
+            color: white;
+        }
+
+        .modal-gomb.megse {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .modal-gomb:hover {
+            opacity: 0.8;
+        }
+
+        .hiba-uzenet {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .urlap-sor {
+                flex-direction: column;
+            }
+            .szurok {
+                justify-content: center;
+            }
+            .esemenyek-racs {
+                grid-template-columns: 1fr;
+            }
+            .modal-tartalom {
+                width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tartaly">
+        <div class="fejlec">
+            <h1>Eseménynaptár</h1>
+        </div>
+
+        <div class="esemeny-hozzaadas">
+            <h3>Új esemény hozzáadása</h3>
+        </br>
+            <div class="urlap-sor">
+                <input type="text" id="nev" placeholder="Esemény neve">
+                <input type="text" id="helyszin" placeholder="Helyszín">
+                <input type="date" id="datum">
+            </div>
+            <div class="urlap-sor">
+                <input type="time" id="idoTol">
+                <input type="time" id="idoIg" placeholder="Vége (opcionális)">
+                <select id="tipus">
+                    <option value="kultura">Kultúra</option>
+                    <option value="sport">Sport</option>
+                    <option value="muveszet">Művészet</option>
+                    <option value="tanulas">Tanulás</option>
+                    <option value="kirandulas">Kirándulás</option>
+                    <option value="zene">Zene</option>
+                    <option value="etel">Étel & Ital</option>
+                    <option value="egyeb">Egyéb</option>
+                </select>
+            </div>
+            <div class="urlap-sor">
+                <select id="maganlat">
+                    <option value="nyilvanos">Nyilvános</option>
+                    <option value="zartkoru">Zártkörű</option>
+                </select>
+                <input type="text" id="szervezo" placeholder="Szervező neve">
+                <button class="gomb" onclick="jelszoKeres()">Hozzáadás</button>
+            </div>
+        </div>
+
+        <div class="szurok">
+            <button class="szuro-gomb aktiv" onclick="szuroEsemenyek('all')">Összes</button>
+            <button class="szuro-gomb" onclick="szuroEsemenyek('kultura')">Kultúra</button>
+            <button class="szuro-gomb" onclick="szuroEsemenyek('sport')">Sport</button>
+            <button class="szuro-gomb" onclick="szuroEsemenyek('muveszet')">Művészet</button>
+            <button class="szuro-gomb" onclick="szuroEsemenyek('tanulas')">Tanulás</button>
+            <button class="szuro-gomb" onclick="szuroEsemenyek('kirandulas')">Kirándulás</button>
+            <button class="szuro-gomb" onclick="szuroEsemenyek('zene')">Zene</button>
+            <button class="szuro-gomb" onclick="szuroEsemenyek('etel')">Étel</button>
+            <button class="szuro-gomb" onclick="szuroEsemenyek('egyeb')">Egyéb</button>
+        </div>
+
+        <div class="esemenyek" id="esemenyek">
+
+        </div>
+    </div>
+
+    <div id="jelszoModal" class="modal">
+        <div class="modal-tartalom">
+            <h3>Admin jelszó szükséges</h3>
+            <p>Kérjük adja meg az admin jelszót az esemény hozzáadásához:</p>
+            <input type="password" id="jelszoMezo" placeholder="Jelszó">
+            <div class="modal-gombok">
+                <button class="modal-gomb megerosit" onclick="jelszoEllenorzes()">OK</button>
+                <button class="modal-gomb megse" onclick="jelszoModalBezar()">Mégse</button>
+            </div>
+            <div id="hibaUzenet" class="hiba-uzenet"></div>
+        </div>
+    </div>
+
+    <script>
+
+        let esemenyek = [
+            {nev: "Pünkösdi Vásár és Vigasság", helyszin: "Vajdahunyadvár", datum: "2025-06-14", idoTol: "10:00", idoIg: "18:00", tipus: "kultura", maganlat: "nyilvanos", szervezo: "Városliget Zrt.", link: "https://www.programturizmus.hu/naptar-hetvege.html"},
+            {nev: "The Ghost Inside koncert", helyszin: "Barba Negra Blue Stage", datum: "2025-06-10", idoTol: "20:00", idoIg: "23:00", tipus: "zene", maganlat: "nyilvanos", szervezo: "Barba Negra", link: "https://gotravel.hu/programok-koncert"},
+            {nev: "Bagossy Brothers Company", helyszin: "Várkert Gyula", datum: "2025-06-14", idoTol: "19:00", idoIg: "22:00", tipus: "zene", maganlat: "nyilvanos", szervezo: "Koncert szervező", link: "https://bagossybrotherscompany.com/koncertek"},
+            {nev: "Kispál és a Borz: Etetés 2025 - 1. nap", helyszin: "KOBUCI kert", datum: "2025-06-20", idoTol: "18:00", idoIg: "23:00", tipus: "zene", maganlat: "nyilvanos", szervezo: "KOBUCI kert", link: "https://kobuci.hu/programok"},
+            {nev: "Kispál és a Borz: Etetés 2025 - 2. nap", helyszin: "KOBUCI kert", datum: "2025-06-21", idoTol: "18:00", idoIg: "23:00", tipus: "zene", maganlat: "nyilvanos", szervezo: "KOBUCI kert", link: "https://kobuci.hu/programok"},
+            {nev: "Aurevoir 10. Születésnap", helyszin: "Budapest Park", datum: "2025-07-10", idoTol: "18:00", idoIg: "23:00", tipus: "zene", maganlat: "nyilvanos", szervezo: "Budapest Park", link: "https://www.budapestpark.hu"},
+            {nev: "Magyar Állami Operaház előadás", helyszin: "Magyar Állami Operaház", datum: "2025-07-15", idoTol: "19:30", idoIg: "22:00", tipus: "kultura", maganlat: "nyilvanos", szervezo: "Magyar Állami Operaház", link: "https://www.opera.hu"},
+            {nev: "Szabadtéri Koncert", helyszin: "Margitsziget", datum: "2025-07-22", idoTol: "20:00", idoIg: "22:30", tipus: "zene", maganlat: "nyilvanos", szervezo: "BKV Zrt.", link: "https://welovebudapest.com/programok"},
+            {nev: "Budapesti Nemzetközi Futóverseny", helyszin: "Hősök tere", datum: "2025-08-03", idoTol: "08:00", idoIg: "12:00", tipus: "sport", maganlat: "nyilvanos", szervezo: "Budapest Maraton", link: "https://www.futanet.hu/cikk/25.-budapest-nemzetkozi-felmaraton"},
+            {nev: "Széchenyi Fürdő Éjszakai Fürdőzés", helyszin: "Széchenyi Gyógyfürdő", datum: "2025-08-10", idoTol: "22:00", idoIg: "02:00", tipus: "egyeb", maganlat: "nyilvanos", szervezo: "Széchenyi Fürdő", link: "https://szechenyifurdo.hu"},
+            {nev: "Honeybeast - CINEMATRIP", helyszin: "Budapest Park", datum: "2025-08-28", idoTol: "18:00", idoIg: "23:00", tipus: "zene", maganlat: "nyilvanos", szervezo: "Budapest Park", link: "https://www.budapestpark.hu"},
+            {nev: "T. Danny koncert", helyszin: "Budapest Park", datum: "2025-08-29", idoTol: "19:00", idoIg: "22:00", tipus: "zene", maganlat: "nyilvanos", szervezo: "Budapest Park", link: "https://www.budapestpark.hu"},
+            {nev: "Budapesti Fényfesztivál", helyszin: "Budavári Palota", datum: "2025-09-05", idoTol: "20:00", idoIg: "23:00", tipus: "kultura", maganlat: "nyilvanos", szervezo: "Fényfesztivál Kft.", link: "https://www.facebook.com/p/Budapest-F%C3%A9nyfesztiv%C3%A1l-100088601768124/?_rdr"},
+            {nev: "Wine & Dine Festival", helyszin: "Várkert Bazár", datum: "2025-09-12", idoTol: "17:00", idoIg: "22:00", tipus: "etel", maganlat: "zartkoru", szervezo: "Gasztro Events", link: "https://www.varkertbazar.hu"},
+            {nev: "Duna-parti Kerékpártúra", helyszin: "Roosevelt tér - Szentendre", datum: "2025-09-20", idoTol: "09:00", idoIg: "17:00", tipus: "kirandulas", maganlat: "nyilvanos", szervezo: "BringaBarátok Egyesület", link: "https://sportoutdoor.hu/tura/50"},
+            {nev: "Nemzeti Színház - Hamlet", helyszin: "Nemzeti Színház", datum: "2025-09-28", idoTol: "19:30", idoIg: "22:30", tipus: "kultura", maganlat: "nyilvanos", szervezo: "Nemzeti Színház", link: "https://nemzetiszinhaz.hu"},
+            {nev: "Budapest Design Week", helyszin: "Millenáris Park", datum: "2025-10-08", idoTol: "10:00", idoIg: "20:00", tipus: "muveszet", maganlat: "nyilvanos", szervezo: "Design Week Szervezők", link: "https://www.facebook.com/budapestdesignweek/"},
+            {nev: "Koncz Zsuzsa koncert", helyszin: "Papp László Budapest Sportaréna", datum: "2025-10-15", idoTol: "20:00", idoIg: "22:30", tipus: "zene", maganlat: "nyilvanos", szervezo: "Sportaréna", link: "https://gotravel.hu/programok-koncert"},
+            {nev: "Kispesti Városünnep", helyszin: "Kispest", datum: "2025-10-22", idoTol: "12:00", idoIg: "20:00", tipus: "kultura", maganlat: "nyilvanos", szervezo: "Kispest Önkormányzat", link: "https://www.programturizmus.hu/ajanlat-budapest-park.html"},
+            {nev: "Budapest International Documentary Festival", helyszin: "Művész Cinema", datum: "2025-10-30", idoTol: "18:00", idoIg: "22:00", tipus: "muveszet", maganlat: "nyilvanos", szervezo: "BIDF", link: "https://bidf.hu/"},
+            {nev: "Debreceni Virágkarnevál", helyszin: "Debrecen, Nagyerdő", datum: "2025-08-15", idoTol: "10:00", idoIg: "18:00", tipus: "kultura", maganlat: "nyilvanos", szervezo: "Debrecen Város", link: "https://www.debrecen.hu/viragkarneval"},
+            {nev: "Szeged Open Tenisztorna", helyszin: "Szeged, Városi Teniszklub", datum: "2025-09-08", idoTol: "09:00", idoIg: "17:00", tipus: "sport", maganlat: "nyilvanos", szervezo: "Magyar Tenisz Szövetség", link: "https://www.huntennis.hu"},
+            {nev: "Pécs Galéria Kortárs Művészeti Kiállítás", helyszin: "Pécs, Modern Galéria", datum: "2025-10-12", idoTol: "10:00", idoIg: "18:00", tipus: "muveszet", maganlat: "nyilvanos", szervezo: "Pécs Művelődési Központ", link: "https://www.pecs.hu/galeria"},
+            {nev: "Szakmai Konferencia: Digitális Oktatás", helyszin: "Győr, Széchenyi Egyetem", datum: "2025-11-05", idoTol: "09:00", idoIg: "16:00", tipus: "tanulas", maganlat: "zartkoru", szervezo: "Széchenyi István Egyetem", link: "https://nws.comp-rend.hu/"},
+            {nev: "Balaton Kerülő Túra", helyszin: "Balatonfüred - Tihany", datum: "2025-07-26", idoTol: "08:00", idoIg: "16:00", tipus: "kirandulas", maganlat: "nyilvanos", szervezo: "Természetjáró Klub", link: "https://funiq.hu/1285-balaton-k%C3%B6r%C3%BCli-ker%C3%A9kp%C3%A1r%C3%BAt-balatoni-bringak%C3%B6r%C3%BAt-203-km"},
+            {nev: "Miskolci Gasztronómiai Fesztivál", helyszin: "Miskolc, Főtér", datum: "2025-09-19", idoTol: "11:00", idoIg: "20:00", tipus: "etel", maganlat: "nyilvanos", szervezo: "Miskolc Turizmus", link: "https://www.miskolc.hu/gasztro"},
+            {nev: "Veszprém Színházfesztivál", helyszin: "Veszprém, Petőfi Színház", datum: "2025-10-03", idoTol: "19:00", idoIg: "22:00", tipus: "kultura", maganlat: "nyilvanos", szervezo: "Petőfi Színház", link: "https://www.petofiszinhaz.hu/"},
+            {nev: "Kecskemét Triatlonverseny", helyszin: "Kecskemét, Sportcentrum", datum: "2025-08-24", idoTol: "07:00", idoIg: "14:00", tipus: "sport", maganlat: "nyilvanos", szervezo: "Kecskeméti Sportklub", link: "https://www.facebook.com/HirosESC/"},
+            {nev: "Hódmezővásárhely Fotópályázat", helyszin: "Hódmezővásárhely, Kultúrház", datum: "2025-11-18", idoTol: "15:00", idoIg: "19:00", tipus: "muveszet", maganlat: "nyilvanos", szervezo: "Hodmezővásárhely Kulturális Egyesület", link: "https://www.hodmezovasarhely.hu/kultura"},
+            {nev: "Szombathely Wellness Hétvége", helyszin: "Szombathely, Aquaticum", datum: "2025-12-07", idoTol: "10:00", idoIg: "18:00", tipus: "egyeb", maganlat: "zartkoru", szervezo: "Aquaticum Wellness", link: "https://www.aquaticum.hu"}
+        ];
+
+        let jelenlegiSzuro = 'all';
+
+        const tipusNevek = {
+            kultura: 'Kultúra', sport: 'Sport', muveszet: 'Művészet', tanulas: 'Tanulás',
+            kirandulas: 'Kirándulás', zene: 'Zene', etel: 'Étel & Ital', egyeb: 'Egyéb'
+        };
+
+        const honapok = ['Január','Február','Március','Április','Május','Június','Július','Augusztus','Szeptember','Október','November','December'];
+
+        function jelszoKeres() {
+
+            const nev = document.getElementById('nev').value;
+            const helyszin = document.getElementById('helyszin').value;
+            const datum = document.getElementById('datum').value;
+            const idoTol = document.getElementById('idoTol').value;
+            const szervezo = document.getElementById('szervezo').value;
+
+            if (!nev || !helyszin || !datum || !idoTol || !szervezo) {
+                alert('Töltse ki a kötelező mezőket!');
+                return;
+            }
+
+            document.getElementById('jelszoModal').style.display = 'block';
+            document.getElementById('jelszoMezo').focus();
+            document.getElementById('hibaUzenet').textContent = '';
+        }
+
+        function jelszoEllenorzes() {
+            const jelszo = document.getElementById('jelszoMezo').value;
+            const helyesJelszo = 'admin0';
+
+            if (jelszo === helyesJelszo) {
+                jelszoModalBezar();
+                esemenyHozzaadas();
+            } else {
+                document.getElementById('hibaUzenet').textContent = 'Hibás jelszó! Próbálja újra.';
+                document.getElementById('jelszoMezo').value = '';
+                document.getElementById('jelszoMezo').focus();
+            }
+        }
+
+        function jelszoModalBezar() {
+            document.getElementById('jelszoModal').style.display = 'none';
+            document.getElementById('jelszoMezo').value = '';
+            document.getElementById('hibaUzenet').textContent = '';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('jelszoModal');
+            if (event.target === modal) {
+                jelszoModalBezar();
+            }
+        }
+
+        document.getElementById('jelszoMezo').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                jelszoEllenorzes();
+            }
+        });
+
+        function esemenyHozzaadas() {
+            const nev = document.getElementById('nev').value;
+            const helyszin = document.getElementById('helyszin').value;
+            const datum = document.getElementById('datum').value;
+            const idoTol = document.getElementById('idoTol').value;
+            const idoIg = document.getElementById('idoIg').value;
+            const tipus = document.getElementById('tipus').value;
+            const maganlat = document.getElementById('maganlat').value;
+            const szervezo = document.getElementById('szervezo').value;
+
+            esemenyek.push({nev, helyszin, datum, idoTol, idoIg, tipus, maganlat, szervezo, link: ''});
+            
+            document.getElementById('nev').value = '';
+            document.getElementById('helyszin').value = '';
+            document.getElementById('datum').value = '';
+            document.getElementById('idoTol').value = '';
+            document.getElementById('idoIg').value = '';
+            document.getElementById('szervezo').value = '';
+            
+            alert('Esemény sikeresen hozzáadva!');
+            esemenyekMegjelenites();
+        }
+
+        function szuroEsemenyek(tipus) {
+            jelenlegiSzuro = tipus;
+            document.querySelectorAll('.szuro-gomb').forEach(gomb => gomb.classList.remove('aktiv'));
+            event.target.classList.add('aktiv');
+            esemenyekMegjelenites();
+        }
+
+        function aktualis(datum, idoTol, idoIg) {
+            const most = new Date();
+            const kezdes = new Date(datum + 'T' + idoTol);
+            const vege = idoIg ? new Date(datum + 'T' + idoIg) : new Date(kezdes.getTime() + 2*60*60*1000);
+            return most >= kezdes && most <= vege;
+        }
+
+        function lejart(datum, idoTol) {
+            const most = new Date();
+            const esemenyIdo = new Date(datum + 'T' + idoTol);
+            return (most - esemenyIdo) > (2 * 60 * 60 * 1000);
+        }
+
+
+        function esemenyekMegjelenites() {
+            let szurt = jelenlegiSzuro === 'all' ? esemenyek : esemenyek.filter(e => e.tipus === jelenlegiSzuro);
+            szurt.sort((a, b) => new Date(a.datum) - new Date(b.datum));
+
+            const honapokSzerint = {};
+            szurt.forEach(esemeny => {
+                const d = new Date(esemeny.datum);
+                const ev = d.getFullYear();
+                const honap = d.getMonth();
+                const kulcs = `${ev}-${honap.toString().padStart(2, '0')}`;
+                if (!honapokSzerint[kulcs]) honapokSzerint[kulcs] = {ev: ev, honap: honap, esemenyek: []};
+                honapokSzerint[kulcs].esemenyek.push(esemeny);
+            });
+
+            let html = '';
+            Object.keys(honapokSzerint).sort().forEach(honapKulcs => {
+                const honapAdat = honapokSzerint[honapKulcs];
+                html += `<h2 class="ho-cim">${honapok[honapAdat.honap]} ${honapAdat.ev}</h2>`;
+                html += '<div class="esemenyek-racs">';
+                
+                honapAdat.esemenyek.forEach(esemeny => {
+                    const idoSzoveg = esemeny.idoIg ? `${esemeny.idoTol} - ${esemeny.idoIg}` : `${esemeny.idoTol}-tól`;
+                    const maganlat = esemeny.maganlat === 'nyilvanos' ? 'Nyilvános' : 'Zártkörű';
+                    const aktualisClass = aktualis(esemeny.datum, esemeny.idoTol, esemeny.idoIg) ? ' aktualis' : '';
+                    const lejartClass = lejart(esemeny.datum, esemeny.idoTol) ? ' lejart' : '';
+                    
+                    html += `
+                        <div class="esemeny-kartya tipus-${esemeny.tipus}${aktualisClass}${lejartClass}">
+                            <div class="maganlat">${maganlat}</div>
+                            <div class="esemeny-cim">${esemeny.nev}</div>
+                            <div class="esemeny-adat">📍 ${esemeny.helyszin}</div>
+                            <div class="esemeny-adat">📅 ${new Date(esemeny.datum).toLocaleDateString('hu-HU')}</div>
+                            <div class="esemeny-adat">🕐 ${idoSzoveg}</div>
+                            <div class="esemeny-tipus">${tipusNevek[esemeny.tipus]}</div>
+                            <button class="reszletek-gomb" onclick="esemenyReszletekMegnyitas('${esemeny.nev}')">Részletek & Jegyek →</button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            });
+
+            document.getElementById('esemenyek').innerHTML = html || '<p style="text-align:center;color:#999;padding:40px;">Nincs esemény</p>';
+        }
+
+        function esemenyReszletekMegnyitas(esemenyNev) {
+
+            const esemeny = esemenyek.find(e => e.nev === esemenyNev);
+            
+            if (esemeny && esemeny.link) {
+                window.open(esemeny.link, '_blank');
+            }
+        }
+
+        document.getElementById('datum').value = new Date().toISOString().split('T')[0];
+        esemenyekMegjelenites();
+        setInterval(esemenyekMegjelenites, 60000);
+    </script>
+</body>
+</html>
